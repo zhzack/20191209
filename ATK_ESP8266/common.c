@@ -3,10 +3,13 @@
 //用户配置区
 
 //连接端口号:6789,可自行修改为其他端口.
-const u8* portnum=(u8 *)"6789";		 
+const u8* portnum=(u8 *)"6789";	
+
+const u8* ip_buf=(u8 *)"47.97.25.40";
+const u8* ip_buf2=(u8 *)"192.168.2.117";
 
 //WIFI STA模式,设置要去连接的路由器无线参数,请根据你自己的路由器设置,自行修改.
-const u8* wifista_ssid=(u8 *)"11";			//路由器SSID号
+const u8* wifista_ssid=(u8 *)"1";			//路由器SSID号
 const u8* wifista_encryption=(u8 *)"wpawpa2_aes";	//wpa/wpa2 aes加密方式
 const u8* wifista_password=(u8 *)"11111111"; 	//连接密码
 
@@ -136,7 +139,7 @@ u8 atk_8266_apsta_check(void)
 		return 0;
 	else return 1;
 }
-//获取ATK-ESP8266模块的连接状态
+//获取ATK-ESP8266模块的TCP连接状态
 //返回值:0,未连接;1,连接成功.
 u8 atk_8266_consta_check(void)
 {

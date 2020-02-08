@@ -1,6 +1,0 @@
--c --cpu Cortex-M4.fp -g -O2 --apcs=interwork --split_sections -I ..\CORE -I ..\OBJ -I ..\USER -I ..\HALLIB\STM32F4xx_HAL_Driver\Inc -I ..\SYSTEM\delay -I ..\SYSTEM\sys -I ..\SYSTEM\usart -I ..\HARDWARE\LED -I ..\HARDWARE\LCD -I ..\HARDWARE\KEY -I ..\HARDWARE\SDRAM -I ..\HARDWARE\TIMER -I ..\HARDWARE\IIC -I ..\HARDWARE\PCF8574 -I ..\FreeRTOS\include -I ..\FreeRTOS\portable\RVDS\ARM_CM4F -I ..\MALLOC -I ..\HARDWARE\ESP8266 -I ..\HARDWARE\USART3 -I ..\HARDWARE\KEYS -I ..\HARDWARE\REMOTE -I ..\ATK_ESP8266 -I ..\HARDWARE\24CXX -I ..\HARDWARE\TOUCH -I ..\HARDWARE\USART3 -I ..\HARDWARE\W25QXX -I ..\TEXT -I ..\FATFS\src -I ..\FATFS\exfuns -I ..\HARDWARE\SPI -I ..\HARDWARE\SDIO -I ..\USMART
--I.\RTE\_FreeRTOS
--IC:\Users\Zack\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.14.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include
--IC:\Keil_v5\ARM\CMSIS\Include
--D__UVISION_VERSION="528" -DSTM32F429xx -DUSE_HAL_DRIVER -DSTM32F429xx
--o ..\obj\timer.o --omf_browse ..\obj\timer.crf --depend ..\obj\timer.d "..\HARDWARE\TIMER\timer.c"

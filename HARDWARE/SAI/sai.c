@@ -1,20 +1,6 @@
 #include "sai.h" 
 #include "delay.h"
-//////////////////////////////////////////////////////////////////////////////////	 
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//ALIENTEK STM32开发板
-//SAI 驱动代码	   
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//创建日期:2016/1/11
-//版本：V1.1
-//版权所有，盗版必究。
-//Copyright(C) 广州市星翼电子科技有限公司 2014-2024
-//All rights reserved	
-//********************************************************************************
-//V1.1 20160111
-//新增SAIB_Init、SAIA_RX_DMA_Init、SAI_Rec_Start和SAI_Rec_Stop等函数								   
-////////////////////////////////////////////////////////////////////////////////// 	
+
 
 SAI_HandleTypeDef SAI1A_Handler;        //SAI1 Block A句柄
 SAI_HandleTypeDef SAI1B_Handler;        //SAI1 Block B句柄

@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F429xx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F4xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\HARDWARE\LCD;..\HARDWARE\KEY;..\HARDWARE\SDRAM;..\HARDWARE\TIMER;..\HARDWARE\IIC;..\HARDWARE\PCF8574;..\FreeRTOS\include;..\FreeRTOS\portable\RVDS\ARM_CM4F;..\MALLOC;..\HARDWARE\ESP8266;..\HARDWARE\USART3;..\HARDWARE\KEYS;..\HARDWARE\REMOTE;..\ATK_ESP8266;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\USART3;..\HARDWARE\W25QXX;..\TEXT;..\FATFS\src;..\FATFS\exfuns;..\HARDWARE\SPI;..\HARDWARE\SDIO;..\USMART;..\HARDWARE\AP3216C;..\HARDWARE\Network;..\APP;..\AUDIOCODEC\wav;..\HARDWARE\WM8978;..\HARDWARE\SAI</IncludePath>
+              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F4xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\HARDWARE\LCD;..\HARDWARE\KEY;..\HARDWARE\SDRAM;..\HARDWARE\TIMER;..\HARDWARE\IIC;..\HARDWARE\PCF8574;..\FreeRTOS\include;..\FreeRTOS\portable\RVDS\ARM_CM4F;..\MALLOC;..\HARDWARE\ESP8266;..\HARDWARE\USART3;..\HARDWARE\KEYS;..\HARDWARE\REMOTE;..\ATK_ESP8266;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\USART3;..\HARDWARE\W25QXX;..\TEXT;..\FATFS\src;..\FATFS\exfuns;..\HARDWARE\SPI;..\HARDWARE\SDIO;..\USMART;..\HARDWARE\AP3216C;..\HARDWARE\Network;..\APP;..\AUDIOCODEC\wav;..\HARDWARE\WM8978;..\HARDWARE\SAI;..\HARDWARE\NAND;..\HARDWARE\TASKS</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -396,6 +396,11 @@
               <FileName>system_stm32f4xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\system_stm32f4xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>tasks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\TASKS\tasks.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -883,11 +888,6 @@
               <FilePath>..\HARDWARE\SDIO\sdio_sdcard.c</FilePath>
             </File>
             <File>
-              <FileName>time.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\HARDWARE\TIMER\time.c</FilePath>
-            </File>
-            <File>
               <FileName>remote.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\REMOTE\remote.c</FilePath>
@@ -901,6 +901,26 @@
               <FileName>wm8978.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\WM8978\wm8978.c</FilePath>
+            </File>
+            <File>
+              <FileName>ftl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\NAND\ftl.c</FilePath>
+            </File>
+            <File>
+              <FileName>nand.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\NAND\nand.c</FilePath>
+            </File>
+            <File>
+              <FileName>nandtester.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\NAND\nandtester.c</FilePath>
+            </File>
+            <File>
+              <FileName>timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\TIMER\timer.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -975,31 +995,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>ATK_ESP8266</GroupName>
-          <Files>
-            <File>
-              <FileName>apsta.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ATK_ESP8266\apsta.c</FilePath>
-            </File>
-            <File>
-              <FileName>common.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ATK_ESP8266\common.c</FilePath>
-            </File>
-            <File>
-              <FileName>wifiap.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ATK_ESP8266\wifiap.c</FilePath>
-            </File>
-            <File>
-              <FileName>wifista.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ATK_ESP8266\wifista.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>TEXT</GroupName>
           <Files>
             <File>
@@ -1045,26 +1040,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>USMART</GroupName>
-          <Files>
-            <File>
-              <FileName>usmart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USMART\usmart.c</FilePath>
-            </File>
-            <File>
-              <FileName>usmart_config.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USMART\usmart_config.c</FilePath>
-            </File>
-            <File>
-              <FileName>usmart_str.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USMART\usmart_str.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>APP</GroupName>
           <Files>
             <File>
@@ -1086,6 +1061,51 @@
               <FileName>wavplay.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\AUDIOCODEC\wav\wavplay.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>ESP8266</GroupName>
+          <Files>
+            <File>
+              <FileName>apsta.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\apsta.c</FilePath>
+            </File>
+            <File>
+              <FileName>common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\common.c</FilePath>
+            </File>
+            <File>
+              <FileName>esp8266_tcp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\esp8266_tcp.c</FilePath>
+            </File>
+            <File>
+              <FileName>net_voc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\net_voc.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifiap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\wifiap.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifista.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\wifista.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifista_tcp_c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\wifista_tcp_c.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifista_tcp2_c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\wifista_tcp2_c.c</FilePath>
             </File>
           </Files>
         </Group>

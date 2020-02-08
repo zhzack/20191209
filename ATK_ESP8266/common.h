@@ -17,7 +17,7 @@
 
 	
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+ 
 void atk_8266_init(void);
 
 u8 atk_8266_mode_cofig(u8 netpro);
@@ -46,10 +46,11 @@ void atk_8266_test(void);
 u8 atk_8266_apsta_test(void);	//WIFI AP+STA模式测试
 u8 atk_8266_wifista_test(void);	//WIFI STA测试
 u8 atk_8266_wifiap_test(void);	//WIFI AP测试
+u8 wifi_sta_tcp_c(void);
 
 //用户配置参数
 extern const u8* portnum;			//连接端口
- 
+extern const u8* ip_buf;				//连接IP
 extern const u8* wifista_ssid;		//WIFI STA SSID
 extern const u8* wifista_encryption;//WIFI STA 加密方式
 extern const u8* wifista_password; 	//WIFI STA 密码

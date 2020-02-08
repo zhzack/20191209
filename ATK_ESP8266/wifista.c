@@ -13,13 +13,16 @@ u8 atk_8266_wifista_test(void)
 	u8 key;
 	u8 timex=0; 
 	u8 ipbuf[16]="47.97.25.40"; 	//IP缓存
+	//u8 ipbuf[32]="openapi.baidu.com";
+	//u8 ipbuf[16]="111.202.114.136";
 	u8 *p;
 	u16 t=999;		//加速第一次获取链接状态
 	u8 res=0;
 	u16 rlen=0;
 	u8 constate=0;	//连接状态
 	extern QueueHandle_t Message3_Queue;
-	p=mymalloc(SRAMIN,32);							//申请32字节内存
+	p=mymalloc(SRAMIN,32);				 			//申请32字节内存
+	//if(atk_8266_send_cmd("AT+CIFSR",".",50))goto PRESTA;
 	atk_8266_send_cmd("AT+CWMODE=1","OK",50);		//设置WIFI STA模式
 	atk_8266_send_cmd("AT+RST","OK",20);		//DHCP服务器关闭(仅AP模式有效) 
 	delay_ms(1000);         //延时3S等待重启成功
@@ -126,6 +129,11 @@ PRESTA:
 						atk_8266_send_cmd("AT+CIPSEND","OK",20);         //开始透传           
 						//sprintf((char*)p,"ATK-8266%s测试%d\r\n",ATK_ESP8266_WORKMODE_TBL[netpro],t/10);//测试数据
 						sprintf((char*)p,"{\"id\":\"0001\",\"to\":\"0002\",\"msg\":\"4481516\"}\r\n");//测试数据
+//						sprintf((char*)p,"GET /oauth/2.0/token?\
+//									grant_type=client_credentials\
+//									&client_id=17882718\
+//									&client_secret=SfnUuuXdqpVpejBqZITQ4sloCTnKrx9l \
+//									HTTP/1.1\r\nHost: openapi.baidu.com\r\n\r\n");
 						Show_Str(30+54,100,200,12,p,12,0);
 						u3_printf("%s",p);
 						timex=100;
@@ -134,6 +142,7 @@ PRESTA:
 					{
 //						sprintf((char*)p,"ATK-8266%s测试%02d\r\n",ATK_ESP8266_WORKMODE_TBL[netpro],t/10);//测试数据
 						sprintf((char*)p,"{\"id\":\"0001\",\"to\":\"0001\",\"msg\":\"4481516\"}\r\n");//测试数据
+						
 						Show_Str(30+54,100,200,12,p,12,0);
 						atk_8266_send_cmd("AT+CIPSEND=0,25","OK",200);  //发送指定长度的数据
 						delay_ms(200);

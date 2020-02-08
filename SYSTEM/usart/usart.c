@@ -34,6 +34,12 @@ int fputc(int ch, FILE *f)
 	return ch;
 }
 #endif 
+ 
+
+
+extern QueueHandle_t Message3_Queue;	//信息队列句柄
+extern QueueHandle_t Message_Queue;	//信息队列句柄
+
 
 //#if EN_USART1_RX   //如果使能了接收
 //串口1中断服务程序
@@ -74,8 +80,8 @@ void uart_init(u32 bound)
 	UART1_Handler.Init.Mode=UART_MODE_TX_RX;		    //收发模式
 	HAL_UART_Init(&UART1_Handler);					    //HAL_UART_Init()会使能UART1
 }
-//初始化IO 串口3 
-//bound:波特率
+////初始化IO 串口3 
+////bound:波特率
 void usart3_init(u32 bound)
 {	
 	//UART 初始化设置
@@ -115,7 +121,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 #if EN_USART1_RX
 		__HAL_UART_ENABLE_IT(huart,UART_IT_RXNE);		//开启接收中断
 		HAL_NVIC_EnableIRQ(USART1_IRQn);				//使能USART1中断
-		HAL_NVIC_SetPriority(USART1_IRQn,3,3);			//抢占优先级3，子优先级3
+		HAL_NVIC_SetPriority(USART1_IRQn,7,0);			//抢占优先级3，子优先级3
 #endif	
 	}
 	if(huart==(&UART3_Handler))
@@ -139,8 +145,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 //		__HAL_UART_DISABLE_IT(huart,UART_IT_TC);
 		__HAL_UART_ENABLE_IT(huart,UART_IT_RXNE);		//开启接收中断
 		HAL_NVIC_EnableIRQ(USART3_IRQn);				//使能USART3中断
-		HAL_NVIC_SetPriority(USART3_IRQn,2,3);			//抢占优先级2，子优先级3	
-		TIM7_Int_Init(1000-1,9000-1);		//100ms中断
+		HAL_NVIC_SetPriority(USART3_IRQn,7,3);			//抢占优先级2，子优先级3	
+		TIM7_Init(1000-1,9000-1);		//100ms中断
 		USART3_RX_STA=0;		//清零
 		TIM7->CR1&=~(1<<0);        //关闭定时器7
 	}
@@ -162,11 +168,13 @@ void u3_printf(char* fmt,...)
 	} 
 }
 
-extern QueueHandle_t Message_Queue;	//信息队列句柄
+
 //串口1中断服务程序
 void USART1_IRQHandler(void)                	
 { 
 	u8 Res;	
+	BaseType_t xHigherPriorityTaskWoken;
+	//BaseType_t err;
 	if((__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_RXNE)!=RESET))  //接收中断(接收到的数据必须是0x0d 0x0a结尾)
 	{
         HAL_UART_Receive(&UART1_Handler,&Res,1,1000); 
@@ -175,7 +183,11 @@ void USART1_IRQHandler(void)
 			if(USART_RX_STA&0x4000)//接收到了0x0d
 			{
 				if(Res!=0x0a)USART_RX_STA=0;//接收错误,重新开始
-				else USART_RX_STA|=0x8000;	//接收完成了 
+				else {
+					
+					USART_RX_STA|=0x8000;	//接收完成了
+					
+				}	
 			}
 			else //还没收到0X0D
 			{	
@@ -188,29 +200,41 @@ void USART1_IRQHandler(void)
 				}		 
 			}
 		}   		 
-	}
-
-	HAL_UART_IRQHandler(&UART1_Handler);	
+	} 
+	HAL_UART_IRQHandler(&UART1_Handler);
+	if((USART_RX_STA&0x8000)&&(Message_Queue!=NULL))
+		{
+		xQueueSendFromISR(Message_Queue,USART_RX_BUF,&xHigherPriorityTaskWoken);//向队列中发送数据
+		
+		USART_RX_STA=0;	
+		memset(USART_RX_BUF,0,USART_REC_LEN);//清除数据接收缓冲区USART_RX_BUF,用于下一次数据接收
+	
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);//如果需要的话进行一次任务切换
+		}
+		
 
 } 
-	
+extern 	TIM_HandleTypeDef TIM7_Handler;
+extern void disp_str(u8* str);
+extern u8 i;
 void USART3_IRQHandler(void)
 {
-	u8 res;	 
-	BaseType_t xHigherPriorityTaskWoken;	
+	u8 res;
+	 
+	BaseType_t xHigherPriorityTaskWoken3;	
 	if(__HAL_UART_GET_FLAG(&UART3_Handler,UART_FLAG_RXNE)!=RESET)//接收到数据
 	{	 
-//		HAL_UART_Receive(&UART3_Handler,&res,1,1000);
+		//HAL_UART_Receive(&UART3_Handler,&res,1,1000);
 		res=USART3->DR; 			 
 		if((USART3_RX_STA&(1<<15))==0)//接收完的一批数据,还没有被处理,则不再接收其他数据
 		{ 
 			if(USART3_RX_STA<USART3_MAX_RECV_LEN)	//还可以接收数据
 			{
-//				__HAL_TIM_SetCounter(&TIM7_Handler,0);	
+				//__HAL_TIM_SetCounter(&TIM7_Handler,0);	
 				TIM7->CNT=0;         				//计数器清空	
 				if(USART3_RX_STA==0) 				//使能定时器7的中断 
 				{
-//					__HAL_RCC_TIM7_CLK_ENABLE();            //使能TIM7时钟
+					//__HAL_RCC_TIM7_CLK_ENABLE();            //使能TIM7时钟
 					TIM7->CR1|=1<<0;     			//使能定时器7
 				}
 				USART3_RX_BUF[USART3_RX_STA++]=res;	//记录接收到的值	 
@@ -219,17 +243,20 @@ void USART3_IRQHandler(void)
 				USART3_RX_STA|=1<<15;				//强制标记接收完成
 			} 
 		}
-		//	//就向队列发送接收到的数据
-	if((USART_RX_STA&0x8000)&&(Message_Queue!=NULL))
-	{
-		xQueueSendFromISR(Message_Queue,USART3_RX_BUF,&xHigherPriorityTaskWoken);//向队列中发送数据
-		
-		USART_RX_STA=0;	
-		memset(USART3_RX_BUF,0,USART_REC_LEN);//清除数据接收缓冲区USART_RX_BUF,用于下一次数据接收
-	
-		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);//如果需要的话进行一次任务切换
-	}
-	}  				 											 
+		 HAL_UART_IRQHandler(&UART3_Handler);
+		//	就向队列发送接收到的数据
+		if((USART3_RX_STA&0x8000)&&(Message3_Queue!=NULL))
+		{
+			xQueueSendFromISR(Message3_Queue,USART3_RX_BUF,&xHigherPriorityTaskWoken3);//向队列中发送数据
+			
+			USART3_RX_STA=0;	
+			memset(USART3_RX_BUF,0,USART3_MAX_RECV_LEN);//清除数据接收缓冲区USART_RX_BUF,用于下一次数据接收
+			//i++;
+			//disp_str(&i);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken3);//如果需要的话进行一次任务切换
+		}
+	}  
+
 }   
  
 

@@ -13,18 +13,7 @@
 #include "exfuns.h"  
 #include "text.h"
 #include "string.h"  
-//////////////////////////////////////////////////////////////////////////////////	 
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//ALIENTEK STM32开发板
-//录音机 应用代码	   
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//创建日期:2016/1/11
-//版本：V1.0
-//版权所有，盗版必究。
-//Copyright(C) 广州市星翼电子科技有限公司 2014-2024
-//All rights reserved									  
-////////////////////////////////////////////////////////////////////////////////// 	
+
   
 u8 *sairecbuf1;			//SAI1 DMA接收BUF1
 u8 *sairecbuf2; 		//SAI1 DMA接收BUF2
@@ -103,7 +92,7 @@ void recoder_enter_rec_mode(void)
   	sai_rx_callback=rec_sai_dma_rx_callback;//初始化回调函数指sai_rx_callback
  	SAI_Play_Start();			//开始SAI数据发送(主机)
 	SAI_Rec_Start(); 			//开始SAI数据接收(从机)
-	recoder_remindmsg_show(0);
+	//recoder_remindmsg_show(0);
 }  
 //进入PCM 放音模式 		  
 void recoder_enter_play_mode(void)
@@ -155,13 +144,13 @@ void recoder_remindmsg_show(u8 mode)
 	POINT_COLOR=RED;
 	if(mode==0)	//录音模式
 	{
-		Show_Str(30,120,200,16,"KEY0:REC/PAUSE",16,0); 
-		Show_Str(30,140,200,16,"KEY2:STOP&SAVE",16,0); 
-		Show_Str(30,160,200,16,"WK_UP:PLAY",16,0); 
+		Show_Str(30,120,200,16,(u8*)"KEY0:REC/PAUSE",16,0); 
+		Show_Str(30,140,200,16,(u8*)"KEY2:STOP&SAVE",16,0); 
+		Show_Str(30,160,200,16,(u8*)"WK_UP:PLAY",16,0); 
 	}else		//放音模式
 	{
-		Show_Str(30,120,200,16,"KEY0:STOP Play",16,0);  
-		Show_Str(30,140,200,16,"WK_UP:PLAY/PAUSE",16,0); 
+		Show_Str(30,120,200,16,(u8*)"KEY0:STOP Play",16,0);  
+		Show_Str(30,140,200,16,(u8*)"WK_UP:PLAY/PAUSE",16,0); 
 	}
 }
 //通过时间获取文件名
@@ -183,7 +172,7 @@ void recoder_new_pathname(u8 *pname)
 void wav_recorder(void)
 { 
 	u8 res,i;
-	u8 key;
+	//u8 key;
 	u8 rval=0;
 	__WaveHeader *wavhead=0; 
  	DIR recdir;	 					//目录  
@@ -193,7 +182,7 @@ void wav_recorder(void)
 	u32 recsec=0;					//录音时间 
   	while(f_opendir(&recdir,"0:/RECORDER"))//打开录音文件夹
  	{	 
-		Show_Str(30,230,240,16,"RECORDER文件夹错误!",16,0);
+		Show_Str(30,230,240,16,(u8*)"RECORDER文件夹错误!",16,0);
 		delay_ms(200);				  
 		LCD_Fill(30,230,240,246,WHITE);		//清除显示	     
 		delay_ms(200);				  
@@ -213,75 +202,26 @@ void wav_recorder(void)
 	if(rval==0)		
 	{
 		recoder_enter_rec_mode();	//进入录音模式,此时耳机可以听到咪头采集到的音频   
-		pname[0]=0;					//pname没有任何文件名 
+		pname[0]=0;					//pname没有任何文件名
+		
+		recsec=0;	 
+		recoder_new_pathname(pname);			//得到新的名字
+		Show_Str(30,190,lcddev.width,16,(u8*)"录制:",16,0);		   
+		Show_Str(30+40,190,lcddev.width,16,pname+11,16,0);//显示当前录音文件名字
+		recoder_wav_init(wavhead);				//初始化wav数据	
+		res=f_open(f_rec,(const TCHAR*)pname, FA_CREATE_ALWAYS | FA_WRITE); 
+		if(res)			//文件创建失败
+		{
+			rec_sta=0;	//创建文件失败,不能录音
+			rval=0XFE;	//提示是否存在SD卡
+		}else 
+		{
+			res=f_write(f_rec,(const void*)wavhead,sizeof(__WaveHeader),&bw);//写入头数据
+			recoder_msg_show(0,0);
+			rec_sta|=0X80;	//开始录音	 
+		} 
  	   	while(rval==0)
 		{
-			key=KEY_Scan(0);
-			switch(key)
-			{		
-				case KEY2_PRES:	//STOP&SAVE
-					if(rec_sta&0X80)//有录音
-					{
-						rec_sta=0;	//关闭录音
-						wavhead->riff.ChunkSize=wavsize+36;		//整个文件的大小-8;
-				   		wavhead->data.ChunkSize=wavsize;		//数据大小
-						f_lseek(f_rec,0);						//偏移到文件头.
-				  		f_write(f_rec,(const void*)wavhead,sizeof(__WaveHeader),&bw);//写入头数据
-						f_close(f_rec);
-						wavsize=0;
-						sairecfifordpos=0;	//FIFO读写位置重新归零
-						sairecfifowrpos=0;
-					}
-					rec_sta=0;
-					recsec=0;
-				 	LED1=1;	 						//关闭DS1
-					LCD_Fill(30,190,lcddev.width,lcddev.height,WHITE);//清除显示,清除之前显示的录音文件名		      
-					break;	 
-				case KEY0_PRES:	//REC/PAUSE
-					if(rec_sta&0X01)//原来是暂停,继续录音
-					{
-						rec_sta&=0XFE;//取消暂停
-					}else if(rec_sta&0X80)//已经在录音了,暂停
-					{
-						rec_sta|=0X01;	//暂停
-					}else				//还没开始录音 
-					{
-						recsec=0;	 
-						recoder_new_pathname(pname);			//得到新的名字
-						Show_Str(30,190,lcddev.width,16,"录制:",16,0);		   
-						Show_Str(30+40,190,lcddev.width,16,pname+11,16,0);//显示当前录音文件名字
-				 		recoder_wav_init(wavhead);				//初始化wav数据	
-	 					res=f_open(f_rec,(const TCHAR*)pname, FA_CREATE_ALWAYS | FA_WRITE); 
-						if(res)			//文件创建失败
-						{
-							rec_sta=0;	//创建文件失败,不能录音
-							rval=0XFE;	//提示是否存在SD卡
-						}else 
-						{
-							res=f_write(f_rec,(const void*)wavhead,sizeof(__WaveHeader),&bw);//写入头数据
-							recoder_msg_show(0,0);
- 							rec_sta|=0X80;	//开始录音	 
-						} 
- 					}
-					if(rec_sta&0X01)LED1=0;	//提示正在暂停
-					else LED1=1;
-					break;  
-				case WKUP_PRES:	//播放最近一段录音
-					if(rec_sta!=0X80)//没有在录音
-					{   	 		 				  
-						if(pname[0])//如果触摸按键被按下,且pname不为空
-						{				 
-							Show_Str(30,190,lcddev.width,16,"播放:",16,0);		   
-							Show_Str(30+40,190,lcddev.width,16,pname+11,16,0);//显示当播放的文件名字
-							LCD_Fill(30,210,lcddev.width-1,230,WHITE); 
-							recoder_enter_play_mode();	//进入播放模式
-							audio_play_song(pname);		//播放pname
-							LCD_Fill(30,190,lcddev.width-1,lcddev.height-1,WHITE);//清除显示,清除之前显示的录音文件名	  
-							recoder_enter_rec_mode();	//重新进入录音模式 
-						}
-					}
-					break;
-			}
 			if(rec_sai_fifo_read(&pdatabuf))//读取一次数据,读到数据了,写入文件
 			{
 				res=f_write(f_rec,pdatabuf,SAI_RX_DMA_BUF_SIZE,(UINT*)&bw);//写入文件
@@ -299,8 +239,28 @@ void wav_recorder(void)
 				recsec=wavsize/wavhead->fmt.ByteRate;	//录音时间
 				recoder_msg_show(recsec,wavhead->fmt.SampleRate*wavhead->fmt.NumOfChannels*wavhead->fmt.BitsPerSample);//显示码率
 			}
-		}		 
-	}    
+		if(KEY0_PRES==KEY_Scan(0)){
+			if(rec_sta&0X01)LED1=0;	//提示正在暂停
+			else LED1=1;
+			rec_sta=0;	//关闭录音
+			wavhead->riff.ChunkSize=wavsize+36;		//整个文件的大小-8;
+			wavhead->data.ChunkSize=wavsize;		//数据大小
+			f_lseek(f_rec,0);						//偏移到文件头.
+			f_write(f_rec,(const void*)wavhead,sizeof(__WaveHeader),&bw);//写入头数据
+			f_close(f_rec);
+			wavsize=0;
+			sairecfifordpos=0;	//FIFO读写位置重新归零
+			sairecfifowrpos=0;
+			rec_sta=0;
+			recsec=0;
+			LED1=1;	 						//关闭DS1
+			LCD_Fill(30,190,lcddev.width,lcddev.height,WHITE);//清除显示,清除之前显示的录音文件名
+			break;
+			}
+			
+			
+		}   
+	}
 	myfree(SRAMIN,sairecbuf1);	//释放内存
 	myfree(SRAMIN,sairecbuf2);	//释放内存  
 	for(i=0;i<SAI_RX_FIFO_SIZE;i++)myfree(SRAMIN,sairecfifobuf[i]);//SAI录音FIFO内存释放
@@ -308,22 +268,6 @@ void wav_recorder(void)
 	myfree(SRAMIN,wavhead);		//释放内存  
 	myfree(SRAMIN,pname);		//释放内存  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

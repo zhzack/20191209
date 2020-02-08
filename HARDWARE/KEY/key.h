@@ -2,7 +2,6 @@
 #define _KEY_H
 #include "sys.h"
 
-//////////////////////////////////////////////////////////////////////////////////
 #define KEY0        PHin(3) //KEY0°´¼üPH3
 #define KEY1        PHin(2) //KEY1°´¼üPH2
 #define KEY2        PCin(13)//KEY2°´¼üPC13

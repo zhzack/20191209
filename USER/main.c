@@ -5,7 +5,7 @@
 #include "lcd.h"
 #include "sdram.h"
 #include "key.h"
-#include "time.h"
+#include "timer.h"
 #include "pcf8574.h"
 #include "string.h"
 #include "malloc.h"
@@ -19,8 +19,10 @@
 #include "text.h"	
 #include "exfuns.h"
 #include "common.h"
-#include "usmart.h"
+//#include "usmart.h"
 #include "time.h"
+#include "recorder.h"
+
 //任务优先级
 #define START_TASK_PRIO		1
 //任务堆栈大小	
@@ -31,13 +33,22 @@ TaskHandle_t StartTask_Handler;
 void start_task(void *pvParameters);
 
 //任务优先级
-#define TASK1_TASK_PRIO		2
+#define GET_INFO_PRIO		3
 //任务堆栈大小	
-#define TASK1_STK_SIZE 		256  
+#define GET_INFO_SIZE 		256  
 //任务句柄
-TaskHandle_t Task1Task_Handler;
+TaskHandle_t GET_INFO_Handler;
 //任务函数
-void task1_task(void *pvParameters);
+void get_info_task(void *pvParameters);
+
+//任务优先级
+#define NETWORK_TASK_PRIO		2
+//任务堆栈大小	
+#define NETWORK_STK_SIZE 		256  
+//任务句柄
+TaskHandle_t NetworkTask_Handler;
+//任务函数
+void network_task(void *pvParameters);
 
 //任务优先级
 #define KEYPROCESS_TASK_PRIO 3
@@ -51,7 +62,7 @@ void Keyprocess_task(void *pvParameters);
 
 //按键消息队列的数量
 #define KEYMSG_Q_NUM    1  		//按键消息队列的数量  
-#define MESSAGE_Q_NUM   4   	//发送数据的消息队列的数量 
+#define MESSAGE_Q_NUM   10    	//发送数据的消息队列的数量 
 #define MESSAGE3_Q_NUM   4   	//发送数据的消息队列的数量 
 QueueHandle_t Key_Queue;   		//按键值消息队列句柄
 QueueHandle_t Message_Queue;	//信息队列句柄
@@ -94,15 +105,15 @@ void freertos_load_main_ui(void)
 	POINT_COLOR = BLUE;
 }
 
-
+u8 i=0;
 int main(void)
 {
     HAL_Init();                     //初始化HAL库   
     Stm32_Clock_Init(360,25,2,8);   //设置时钟,180Mhz
     delay_init(180);                //初始化延时函数
     uart_init(115200);              //初始化串口
-	usart3_init(115200);
-	usmart_dev.init(90);						//初始化usmart
+	usart3_init(1500000);
+	//usmart_dev.init(90);						//初始化usmart
     LED_Init();                     //初始化LED 
     KEY_Init();                     //初始化按键
     PCF8574_Init();                 //初始化PCF8574
@@ -125,16 +136,18 @@ int main(void)
  	f_mount(fs[1],"1:",1);          //挂载SPI FLASH. 
 	
 	POINT_COLOR=RED;      
+	
 	while(font_init()) 			    //检查字库
 	{	    
 		LCD_ShowString(30,50,200,16,16,(u8 *)"Font Error!");
-		delay_ms(200);				  
+		delay_ms(20);				  
 		LCD_Fill(30,50,240,66,WHITE);//清除显示	     
 		delay_ms(200);				  
 	}  	 
 	POINT_COLOR=RED;      
- 	 
-	
+ 	Show_Str(30,80,200,16,(u8 *)"野狼团",16,0);
+	Show_Str(30,40,200,16,(u8 *)"智能家居",16,0); 
+	//atk_8266_wifista_test();
     //创建开始任务
     xTaskCreate((TaskFunction_t )start_task,            //任务函数
                 (const char*    )"start_task",          //任务名称
@@ -155,12 +168,19 @@ void start_task(void *pvParameters)
     Message_Queue=xQueueCreate(MESSAGE_Q_NUM,USART_REC_LEN); //创建消息Message_Queue,队列项长度是串口接收缓冲区长度
 	Message3_Queue=xQueueCreate(MESSAGE3_Q_NUM,USART3_MAX_RECV_LEN);
     //创建TASK1任务
-    xTaskCreate((TaskFunction_t )task1_task,             
-                (const char*    )"task1_task",           
-                (uint16_t       )TASK1_STK_SIZE,        
+    xTaskCreate((TaskFunction_t )get_info_task,             
+                (const char*    )"get_info_task",           
+                (uint16_t       )GET_INFO_SIZE,        
                 (void*          )NULL,                  
-                (UBaseType_t    )TASK1_TASK_PRIO,        
-                (TaskHandle_t*  )&Task1Task_Handler);   
+                (UBaseType_t    )GET_INFO_PRIO,        
+                (TaskHandle_t*  )&GET_INFO_Handler); 
+				
+	xTaskCreate((TaskFunction_t )network_task,             
+                (const char*    )"network_task",           
+                (uint16_t       )NETWORK_STK_SIZE,        
+                (void*          )NULL,                  
+                (UBaseType_t    )NETWORK_TASK_PRIO,        
+                (TaskHandle_t*  )&NetworkTask_Handler);				
     //创建TASK2任务
     xTaskCreate((TaskFunction_t )Keyprocess_task,     
                 (const char*    )"keyprocess_task",   
@@ -171,66 +191,85 @@ void start_task(void *pvParameters)
     vTaskDelete(StartTask_Handler); //删除开始任务
     taskEXIT_CRITICAL();            //退出临界区
 }
-
-//task1任务函数
-void task1_task(void *pvParameters)
+static const char __get_token[] = 
 {
-//	u8 key;
-	u8 i=0;
-//    BaseType_t err;
-	atk_8266_test();
-	while(1)
-	{
-//		key=KEY_Scan(0);            //扫描按键
-//        if((Key_Queue!=NULL)&&(key))   //消息队列Key_Queue创建成功,并且按键被按下
-//        {
-//            err=xQueueSend(Key_Queue,&key,10);
-//            if(err==errQUEUE_FULL)   //发送按键值
-//            {
-//                printf("队列Key_Queue已满，数据发送失败!\r\n");
-//            }
-//        }
-        i++;
-        if(i%10==0) //检Message_Queue队列的容量
-        if(i==100)
-        {
-            i=0;
-            LED0=!LED0;
-        }
+"GET /oauth/2.0/token?\
+grant_type=client_credentials\
+&client_id=oOB2hX8gzU1jtP5m9GI4WDQK\
+&client_secret=NW3AUu7MTnwb9RGjVh2OT0rhNeZnxbt0 \
+HTTP/1.1\r\nHost: openapi.baidu.com\r\n\r\n"
+};
+//task1任务函数
+void get_info_task(void *pvParameters)
+{   u8 *p;
+	p=mymalloc(SRAMIN,32);
+		atk_8266_quit_trans();
+		atk_8266_send_cmd((u8 *)"ATE0",(u8 *)"OK",20);//关闭回显
+		atk_8266_send_cmd((u8 *)"AT+CIPMODE=1",(u8 *)"OK",200);      //传输模式为：透传
+		//atk_8266_send_cmd((u8*)"AT+CIPSTART=\"TCP\",\"47.97.25.40\",6789",(u8*)"OK",100);
+		atk_8266_send_cmd((u8*)"AT+CIPSTART=\"TCP\",\"openapi.baidu.com\",80",(u8*)"OK",100);
+		//sprintf((char*)p,"{\"id\":\"0001\",\"to\":\"0002\",\"msg\":\"4455\"}");//测试数据
+		sprintf((char*)p,__get_token);//测试数据
 		
-        vTaskDelay(10);                           //延时10ms，也就是10个时钟节拍	
+	while(1)
+	{ 	atk_8266_send_cmd((u8 *)"AT+CIPSEND",(u8 *)"OK",20);
+		Show_Str(30+54,100,200,12,p,12,0);
+		u3_printf("%s",p);
+		//atk_8266_send_data(p,"token",100);
+        vTaskDelay(100); 
+		atk_8266_quit_trans();                          		//延时10ms，也就是10个时钟节拍	
+		vTaskDelay(100); 
 	}
 	
 	
 }
 
+void network_task(void *pvParameters){
+
+	u8* buffer;
+	BaseType_t err;
+	 while(1)
+	{   
+//		if(Message_Queue!=NULL){
+//			buffer=mymalloc(SRAMIN,USART_REC_LEN);
+//			memset(buffer,0,USART_REC_LEN);	//清除缓冲区
+//			err=xQueueReceive(Message_Queue,buffer,portMAX_DELAY);
+//			if(err==pdPASS){}
+//				  //disp_str(buffer);	//在LCD上显示接收到的消息
+//				disp_str(buffer);	//在LCD上显示接收到的消息
+//				printf("uart1%s",buffer);	
+//			
+//			
+//			myfree(SRAMIN,buffer);		//释放内存
+//		}
+		
+		if(Message3_Queue!=NULL){
+			buffer=mymalloc(SRAMIN,USART3_MAX_RECV_LEN);
+			memset(buffer,0,USART3_MAX_RECV_LEN);	//清除缓冲区
+			err=xQueueReceive(Message3_Queue,buffer,portMAX_DELAY);
+			if(err==pdPASS){ }
+				  //disp_str(buffer);	//在LCD上显示接收到的消息
+				disp_str(buffer);	//在LCD上显示接收到的消息
+				printf("uart3：%s",buffer);
+			
+			//printf("err:%s",(u8*)err);
+			myfree(SRAMIN,buffer);		//释放内存
+		}
+		vTaskDelay(10);      //延时10ms，也就是10个时钟节拍	
+	}
+	
+}
 
 //Keyprocess_task函数
 void Keyprocess_task(void *pvParameters)
-{   u8 *buffer;
-	buffer=mymalloc(SRAMIN,USART3_MAX_RECV_LEN);
+{   
+	
 	while(1)
 	{
-//		Show_Str(60,130,200,16,"KEY0:NEXT   KEY2:PREV",16,0); 
-//		Show_Str(60,150,200,16,"KEY_UP:PAUSE/PLAY",16,0);
-//		audio_play();
-		if(Message_Queue!=NULL)
-        {   
-			memset(buffer,0,USART_REC_LEN);	//清除缓冲区			
-		if(xQueueReceive(Message_Queue,&buffer,portMAX_DELAY))//请求消息
-            {
-				printf("receive from ip :%s\r\n",buffer);    
-            } 
-			//			myfree(SRAMIN,buffer);		//释放内存
-        } 
-		vTaskDelay(10);      //延时10ms，也就是10个时钟节拍	
+		LED1=~LED1;
+		//printf("%d",i);
+		vTaskDelay(1000);      //延时10ms，也就是10个时钟节拍	
 	}
 }
-void key(u8 *key){
-	 if((u8 *)1==key){
-		  LED1=0;
-	 
-	 }
 
-}
 
